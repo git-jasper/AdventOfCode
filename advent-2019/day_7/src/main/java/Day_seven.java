@@ -3,15 +3,8 @@ import java.util.List;
 
 public class Day_seven {
 
-    private int input = 0;
-    private int firstInput = 0;
-    private Integer AMP_A_INDEX = 0;
-    private Integer AMP_B_INDEX = 0;
-    private Integer AMP_C_INDEX = 0;
-    private Integer AMP_D_INDEX = 0;
-    private Integer AMP_E_INDEX = 0;
+    private int input;
     List<Integer> outputs = new ArrayList<>();
-    boolean looping = true;
 
     public static void main(String[] args) {
         Day_seven day_seven = new Day_seven();
@@ -39,35 +32,20 @@ public class Day_seven {
                             if (ampE == ampA || ampE == ampB || ampE == ampC || ampE == ampD) {
                                 continue;
                             }
-                            List<Integer> AMP_A = new ArrayList<>(original);
-                            List<Integer> AMP_B = new ArrayList<>(original);
-                            List<Integer> AMP_C = new ArrayList<>(original);
-                            List<Integer> AMP_D = new ArrayList<>(original);
-                            List<Integer> AMP_E = new ArrayList<>(original);
-                            AMP_A_INDEX = 0;
-                            AMP_B_INDEX = 0;
-                            AMP_C_INDEX = 0;
-                            AMP_D_INDEX = 0;
-                            AMP_E_INDEX = 0;
+                            Program AMP_A = new Program(new ArrayList<>(original), ampA);
+                            Program AMP_B = new Program(new ArrayList<>(original), ampB);
+                            Program AMP_C = new Program(new ArrayList<>(original), ampC);
+                            Program AMP_D = new Program(new ArrayList<>(original), ampD);
+                            Program AMP_E = new Program(new ArrayList<>(original), ampE);
+
                             input = 0;
-                            firstInput = ampA;
-                            AMP_A_INDEX = runAmp(AMP_A, AMP_A_INDEX);
-                            firstInput = ampB;
-                            AMP_B_INDEX = runAmp(AMP_B, AMP_B_INDEX);
-                            firstInput = ampC;
-                            AMP_C_INDEX = runAmp(AMP_C, AMP_C_INDEX);
-                            firstInput = ampD;
-                            AMP_D_INDEX = runAmp(AMP_D, AMP_D_INDEX);
-                            firstInput = ampE;
-                            AMP_E_INDEX = runAmp(AMP_E, AMP_E_INDEX);
-                            while(looping) {
-                                AMP_A_INDEX = runAmp(AMP_A, AMP_A_INDEX);
-                                AMP_B_INDEX = runAmp(AMP_B, AMP_B_INDEX);
-                                AMP_C_INDEX = runAmp(AMP_C, AMP_C_INDEX);
-                                AMP_D_INDEX = runAmp(AMP_D, AMP_D_INDEX);
-                                AMP_E_INDEX = runAmp(AMP_E, AMP_E_INDEX);
+                            while(!AMP_A.terminate) {
+                                run(AMP_A);
+                                run(AMP_B);
+                                run(AMP_C);
+                                run(AMP_D);
+                                run(AMP_E);
                             }
-                            looping = true;
                             outputs.add(input);
                         }
                     }
@@ -76,70 +54,68 @@ public class Day_seven {
         }
         int max = outputs.stream().mapToInt(output -> output).max().getAsInt();
         System.out.println(max);
+        System.out.println("correct answer = 1336480");
     }
 
-    private int runAmp(List<Integer> code, Integer amp_index) {
-        boolean halt = false;
+    private void run(Program program) {
         boolean firstLoop = true;
-        int startIndex = amp_index;
-        for (int i = startIndex; i <= code.size();) {
-            String instruction = getInstructionCode(code, i);
-            String mode = instruction.substring(0, 3);
-            switch (instruction.substring(4)) {
-                case "1":
-                    opCode1(code, i, mode);
-                    i += 4;
-                    break;
-                case "2":
-                    opCode2(code, i, mode);
-                    i += 4;
-                    break;
-                case "3":
-                    if(i == 0) {
-                        opCode3(code, i, firstInput);
-                    } else if (firstLoop){
-                        opCode3(code, i, input);
-                        firstLoop = false;
-                    } else {
-                        amp_index = i;
-                        halt = true;
-                    }
-                    i += 2;
-                    break;
-                case "4":
-                    opCode4(code, i, mode);
-                    i += 2;
-                    break;
-                case "5":
-                    i = opCode5(code, i, mode);
-                    break;
-                case "6":
-                    i = opCode6(code, i, mode);
-                    break;
-                case "7":
-                    opCode7(code, i, mode);
-                    i += 4;
-                    break;
-                case "8":
-                    opCode8(code, i, mode);
-                    i += 4;
-                    break;
-                case "9":
-                    halt = true;
-                    looping = false;
-                    break;
-                default:
-                    throw new IllegalStateException("Unknown opCode");
-            }
-            if (halt) {
-                break;
+        int startIndex = program.pointer;
+        List<Integer> instructions = program.instructions;
+        running: {
+            for (int i = startIndex; i <= instructions.size();) {
+                String instruction = getInstructionCode(instructions, i);
+                String mode = instruction.substring(0, 3);
+                switch (instruction.substring(3)) {
+                    case "01":
+                        opCode1(instructions, i, mode);
+                        i += 4;
+                        break;
+                    case "02":
+                        opCode2(instructions, i, mode);
+                        i += 4;
+                        break;
+                    case "03":
+                        if(i == 0) {
+                            opCode3(instructions, i, program.phase);
+                        } else if (firstLoop){
+                            opCode3(instructions, i, input);
+                            firstLoop = false;
+                        } else {
+                            program.pointer = i;
+                            break running;
+                        }
+                        i += 2;
+                        break;
+                    case "04":
+                        opCode4(instructions, i, mode);
+                        i += 2;
+                        break;
+                    case "05":
+                        i = opCode5(instructions, i, mode);
+                        break;
+                    case "06":
+                        i = opCode6(instructions, i, mode);
+                        break;
+                    case "07":
+                        opCode7(instructions, i, mode);
+                        i += 4;
+                        break;
+                    case "08":
+                        opCode8(instructions, i, mode);
+                        i += 4;
+                        break;
+                    case "99":
+                        program.terminate = true;
+                        break running;
+                    default:
+                        throw new IllegalStateException("Unknown opCode");
+                }
             }
         }
-        return amp_index;
     }
 
     private String getInstructionCode(List<Integer> code, int i) {
-        String opcode = "0000" + String.valueOf(code.get(i));
+        String opcode = "0000" + code.get(i);
         opcode = opcode.substring(opcode.length()-5);
         return opcode;
     }
@@ -211,6 +187,18 @@ public class Day_seven {
             code.set(third, 1);
         } else {
             code.set(third, 0);
+        }
+    }
+
+    class Program {
+        List<Integer> instructions;
+        int phase;
+        int pointer;
+        boolean terminate;
+
+        public Program(List<Integer> instructions, int phase) {
+            this.instructions = instructions;
+            this.phase = phase;
         }
     }
 }
